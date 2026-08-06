@@ -14,7 +14,7 @@ type FormData = {
 };
 
 const SignUpPage = () => {
-  const router = useRouter()
+  const router = useRouter();
   const { register, handleSubmit } = useForm<FormData>();
 
   const handleOnSubmit = async (formData: FormData) => {
@@ -28,9 +28,9 @@ const SignUpPage = () => {
           lastName: formData.lastName,
         }),
       });
-      if(response.ok){
-        router.push("/login-page")
-      }else{
+      if (response.ok) {
+        router.push("/login-page");
+      } else {
         throw new Error("Failed to submit form");
       }
       const result = await response.json();
@@ -70,12 +70,15 @@ const SignUpPage = () => {
           {...register("password", { required: "This field is required" })}
         />
       </div>
-      <div className="flex gap-4 justify-center items-center p-2">
+      <div className="flex gap-2 justify-center items-center p-2">
         <Button type="submit" className="px-2 py-2 text-xl">
           Sign Up
         </Button>
         <span>
-          Don^t have an Account? <Link href="/login-page">Log In</Link>
+          Already have an Account?{" "}
+          <Link href="/login-page" className="text-blue-400">
+            Log In
+          </Link>
         </span>
       </div>
     </form>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type FormData = {
   email: string;
@@ -11,41 +12,60 @@ type FormData = {
 };
 
 const LoginPage = () => {
-   const { register, handleSubmit } = useForm<FormData>();
-  
-    const handleOnSubmit = async (formData: FormData) => {
-      try {
-        const response = await fetch("/api/login", {
+  const { register, handleSubmit } = useForm<FormData>();
+  const router = useRouter();
+  const handleOnSubmit = async (formData: FormData) => {
+    try {
+      const response = await fetch("/api/login", {
         method: "POST",
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
         }),
       });
-       if(!response.ok){
-        throw new Error("Failed to submit form")
-       } 
-       const result = await response.json()
-       console.log("Success",result)
-      } catch (error) {
-        console.error("Error",error)
+      if (response.ok) {
+        router.push("/home-page");
+      } else {
+        throw new Error("Failed to submit form");
       }
-    };  
+      const result = await response.json();
+      console.log("Success", result);
+    } catch (error) {
+      console.error("Error", error);
+    }
+  };
 
   return (
-    <form onSubmit={handleSubmit(handleOnSubmit)} className="flex flex-col justify-center border border-black rounded-md w-2xl gap-2 p-4 m-auto">
+    <form
+      onSubmit={handleSubmit(handleOnSubmit)}
+      className="flex flex-col justify-center border border-black rounded-md w-2xl gap-2 p-4 m-auto"
+    >
       <h2 className="flex items-center justify-center">Log In</h2>
       <span>Email</span>
-      <Input placeholder="Email" type="email" {...register("email", { required: true })} />
+      <Input
+        placeholder="Email"
+        type="email"
+        {...register("email", { required: true })}
+      />
       <span>Password</span>
-      <Input placeholder="Password" type="password" {...register("password", { required: true })} />
-      <div className="flex gap-4 justify-center items-center p-2">
-        <Button type="submit" className="p-4 text-xl">Log In</Button>
-        <span>Already have an Account!<Link href="/signup-page">Sign Up</Link></span>
+      <Input
+        placeholder="Password"
+        type="password"
+        {...register("password", { required: true })}
+      />
+      <div className="flex gap-2 justify-center items-center p-2">
+        <Button type="submit" className="p-4 text-xl">
+          Log In
+        </Button>
+        <span>
+          Dont have an Account!
+          <Link href="/signup-page" className="text-blue-400">
+            Sign Up
+          </Link>
+        </span>
       </div>
     </form>
   );
-}
+};
 
-
-export default LoginPage
+export default LoginPage;
