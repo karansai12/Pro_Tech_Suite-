@@ -12,7 +12,7 @@ type FormData = {
 };
 
 const LoginPage = () => {
-  const { register, handleSubmit } = useForm<FormData>();
+  const { register, handleSubmit,  formState: { errors }, } = useForm<FormData>();
   const router = useRouter();
   const handleOnSubmit = async (formData: FormData) => {
     try {
@@ -42,17 +42,23 @@ const LoginPage = () => {
     >
       <h2 className="flex items-center justify-center">Log In</h2>
       <span>Email</span>
-      <Input
+      <Input  className={`w-full ${errors.email ? "border-red-500" : ""}`}
         placeholder="Email"
         type="email"
         {...register("email", { required: true })}
       />
+       {errors.email && (
+          <p className="text-sm text-red-500">{errors.email.message}</p>
+        )}
       <span>Password</span>
-      <Input
+      <Input  className={`w-full ${errors.password ? "border-red-500" : ""}`}
         placeholder="Password"
         type="password"
         {...register("password", { required: true })}
       />
+       {errors.password && (
+          <p className="text-sm text-red-500">{errors.password.message}</p>
+        )}
       <div className="flex gap-2 justify-center items-center p-2">
         <Button type="submit" className="p-4 text-xl">
           Log In
