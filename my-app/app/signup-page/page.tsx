@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,12 +23,17 @@ type FormData = {
   role: string;
 };
 
-const items = [
+interface RoleItem {
+  label: string;
+  value: string;
+}
+
+const items: RoleItem[] = [
   { label: "Manager", value: "manager" },
   { label: "Employee", value: "employee" },
 ];
 
-const SignUpPage = () => {
+const SignUpPage: React.FC = () => {
   const router = useRouter();
   const {
     register,
@@ -40,6 +46,7 @@ const SignUpPage = () => {
     try {
       const response = await fetch("/api/signup", {
         method: "POST",
+        headers: { "Content-tpe": "application/json" },
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
@@ -48,6 +55,7 @@ const SignUpPage = () => {
           role: formData.role,
         }),
       });
+
       if (response.ok) {
         router.push("/login-page");
       } else {

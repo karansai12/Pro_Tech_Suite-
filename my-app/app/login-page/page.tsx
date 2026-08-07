@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import useStore from "@/lib/store";
 
 type FormData = {
   email: string;
@@ -14,21 +15,27 @@ type FormData = {
 const LoginPage = () => {
   const { register, handleSubmit,  formState: { errors }, } = useForm<FormData>();
   const router = useRouter();
+
+  const setUser = useStore((state)=>state.setUser)
+
   const handleOnSubmit = async (formData: FormData) => {
     try {
       const response = await fetch("/api/login", {
         method: "POST",
+        headers:{"Content-tpe":"application/hson"},
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
         }),
       });
+      
       if (response.ok) {
         router.push("/home-page");
       } else {
         throw new Error("Failed to submit form");
       }
       const result = await response.json();
+      setUser(result.user)
       console.log("Success", result);
     } catch (error) {
       console.error("Error", error);

@@ -1,18 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Figtree } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarHeader,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
-import Link from "next/link";
+import { AppShell } from "@/components/app-shell";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,41 +25,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", geist.variable)}
+      className={cn(
+        "h-full",
+        "antialiased",
+        geistSans.variable,
+        geistMono.variable,
+        "font-sans",
+        geist.variable,
+      )}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
-        <SidebarProvider>
-        <Sidebar>
-          <SidebarHeader>
-            <span className="text-2xl">Navigations</span>
-            <SidebarContent>
-              <SidebarGroup>
-                <h2>
-                  <Link href="/employee-page" className="text-blue-400">
-                    Employee
-                  </Link>
-                </h2>
-                <h2>
-                  <Link href="/project-page" className="text-blue-400">
-                    Project
-                  </Link>
-                </h2>
-                <h2>
-                  <Link href="/profile-page" className="text-blue-400">
-                    profile
-                  </Link>
-                </h2>
-                <h2>
-                  <Link href="/task-page" className="text-blue-400">
-                    Task
-                  </Link>
-                </h2>
-              </SidebarGroup>
-            </SidebarContent>
-            <SidebarFooter>Profile Image - Role</SidebarFooter>
-          </SidebarHeader>
-        </Sidebar>
-      </SidebarProvider>
+      <body className="min-h-full flex flex-col">
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }
