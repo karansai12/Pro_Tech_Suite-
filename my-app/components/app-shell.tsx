@@ -18,7 +18,7 @@ import useStore from "@/lib/store";
 const AUTH_ROUTES = [
   "/employee-page",
   "/project-page",
-  "/profile-page",
+//   "/profile-page",
   "/task-page",
   "/home-page",
 ];
@@ -62,12 +62,12 @@ console.log({role})
             >
               Project
             </Link>
-            <Link
+            {/* <Link
               href="/profile-page"
               className="text-blue-400 hover:text-blue-300"
             >
               Profile
-            </Link>
+            </Link> */}
             <Link
               href="/task-page"
               className="text-blue-400 hover:text-blue-300"
