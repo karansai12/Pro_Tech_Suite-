@@ -22,7 +22,7 @@ const LoginPage = () => {
     try {
       const response = await fetch("/api/login", {
         method: "POST",
-        headers:{"Content-tpe":"application/hson"},
+        headers:{"Content-type":"application/hson"},
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,

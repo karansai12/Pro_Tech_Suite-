@@ -46,7 +46,7 @@ const SignUpPage: React.FC = () => {
     try {
       const response = await fetch("/api/signup", {
         method: "POST",
-        headers: { "Content-tpe": "application/json" },
+        headers: { "Content-type": "application/json" },
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
