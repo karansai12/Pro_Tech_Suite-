@@ -179,31 +179,41 @@ function TaskTable() {
       },
     ];
 
-    if (role !== "EMPLOYEE") {
-      columns.push({
-        headerName: "Actions",
-        sortable: false,
-        filter: false,
-        minWidth: 180,
-        cellRenderer: (params: { data?: TaskRow }) => {
-          if (!params.data) return null;
-          return (
-            <div className="flex flex-row justify-center items-center gap-2">
-              <Button>Edit</Button>
+    columns.push({
+      headerName: "Actions",
+      sortable: false,
+      filter: false,
+      minWidth: role === "MANAGER" ? 180 : 110,
+      cellRenderer: (params: { data?: TaskRow }) => {
+        if (!params.data) return null;
+        const isManager = role === "MANAGER";
+        const canEdit = isManager || params.data.assignedTo === userId;
+        return (
+          <div className="flex flex-row justify-center items-center gap-2">
+            {canEdit ? (
+              <Button
+                onClick={() =>
+                  router.push(`/task-page?id=${params.data!.id}`)
+                }
+              >
+                Edit
+              </Button>
+            ) : null}
+            {isManager ? (
               <Button
                 variant="destructive"
                 onClick={() => handleDelete(params.data!.id)}
               >
                 delete
               </Button>
-            </div>
-          );
-        },
-      });
-    }
+            ) : null}
+          </div>
+        );
+      },
+    });
 
     return columns;
-  }, [canChangeStatus, handleStatusChange, role]);
+  }, [canChangeStatus, handleStatusChange, role, router, userId]);
 
   return (
     <div className="p-4">

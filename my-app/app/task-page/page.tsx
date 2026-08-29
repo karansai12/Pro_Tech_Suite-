@@ -11,8 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import useStore from "@/lib/store";
 
 type TaskStatus = "OPEN" | "INPROGRESS" | "COMPLETED";
 
@@ -42,17 +43,32 @@ const statusItems: { label: string; value: TaskStatus }[] = [
   { label: "COMPLETED", value: "COMPLETED" },
 ];
 
-const TaskPage = () => {
+function toDateInputValue(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function TaskPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const taskId = searchParams.get("id");
+  const { role, id: userId } = useStore((state) => state.user);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [canEdit, setCanEdit] = useState(!taskId);
+  const [formReady, setFormReady] = useState(!taskId);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     control,
+    reset,
   } = useForm<Task>({
     defaultValues: {
       status: "OPEN",
@@ -60,7 +76,7 @@ const TaskPage = () => {
   });
 
   useEffect(() => {
-    const loadOptions = async () => {
+    const loadForm = async () => {
       try {
         const [projectsRes, usersRes] = await Promise.all([
           fetch("/api/projectTable"),
@@ -76,24 +92,76 @@ const TaskPage = () => {
 
         const projectData = await projectsRes.json();
         const userData = await usersRes.json();
-        setProjects(projectData.projects || []);
-        setUsers(userData.users || []);
+        let nextProjects: ProjectOption[] = projectData.projects || [];
+        let nextUsers: UserOption[] = userData.users || [];
+
+        if (!taskId) {
+          setProjects(nextProjects);
+          setUsers(nextUsers);
+          setCanEdit(true);
+          setFormReady(true);
+          return;
+        }
+
+        const taskRes = await fetch(`/api/task?id=${taskId}`);
+        if (!taskRes.ok) {
+          throw new Error("Failed to load task");
+        }
+        const { task } = await taskRes.json();
+        const isManager = role === "MANAGER";
+        const isAssignee = task.assignedTo === userId;
+        if (!isManager && !isAssignee) {
+          setCanEdit(false);
+          setLoadError("Only the assignee or a manager can edit this task");
+          setFormReady(true);
+          return;
+        }
+
+        if (
+          task.project &&
+          !nextProjects.some((project) => project.id === task.project.id)
+        ) {
+          nextProjects = [task.project, ...nextProjects];
+        }
+        if (
+          task.assignee &&
+          !nextUsers.some((user) => user.id === task.assignee.id)
+        ) {
+          nextUsers = [task.assignee, ...nextUsers];
+        }
+
+        setProjects(nextProjects);
+        setUsers(nextUsers);
+        setCanEdit(true);
+        reset({
+          title: task.taskName,
+          description: task.taskDescription,
+          projectId: task.projectId,
+          assignedTo: task.assignedTo,
+          dueDate: toDateInputValue(task.dueDate),
+          status: task.status,
+        });
+        setFormReady(true);
       } catch (err) {
         setLoadError(
           err instanceof Error ? err.message : "Failed to load form options",
         );
+        setFormReady(true);
       }
     };
 
-    loadOptions();
-  }, []);
+    loadForm();
+  }, [reset, role, taskId, userId]);
 
   const handleOnSubmitTask = async (task: Task) => {
+    if (taskId && !canEdit) return;
+
     try {
       const response = await fetch("/api/task", {
-        method: "POST",
+        method: taskId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          ...(taskId ? { taskId } : {}),
           taskName: task.title,
           taskDescription: task.description,
           projectId: task.projectId,
@@ -107,8 +175,8 @@ const TaskPage = () => {
       if (response.ok) {
         router.push("/taskTable-page");
       } else {
+        setLoadError(result.error || "Failed to submit.");
         console.error("Server said:", result);
-        throw new Error("Failed to submit.");
       }
     } catch (error) {
       console.error("Error", error);
@@ -120,12 +188,18 @@ const TaskPage = () => {
       onSubmit={handleSubmit(handleOnSubmitTask)}
       className="flex flex-col justify-center border border-black rounded-md w-2xl gap-2 p-4 m-auto"
     >
-      <h2 className="flex items-center justify-center">Task</h2>
+      <h2 className="flex items-center justify-center">
+        {taskId ? "Edit Task" : "Task"}
+      </h2>
       {loadError && <p className="text-sm text-red-500">{loadError}</p>}
+      {taskId && !formReady ? (
+        <p className="text-sm">Loading saved task...</p>
+      ) : null}
       <span>Task Title</span>
       <Input
         className={`w-full ${errors.title ? "border-red-500" : ""}`}
         placeholder="Task Title"
+        disabled={Boolean(taskId) && !canEdit}
         {...register("title", { required: "This field is requird" })}
       />
       {errors.title && (
@@ -135,21 +209,29 @@ const TaskPage = () => {
       <Input
         className={`w-full ${errors.description ? "border-red-500" : ""}`}
         placeholder="Task Description"
+        disabled={Boolean(taskId) && !canEdit}
         {...register("description", { required: "This field is requird" })}
       />
       {errors.description && (
         <p className="text-sm text-red-500">{errors.description.message}</p>
       )}
       <span>Projects</span>
+      {formReady ? (
       <Controller
         name="projectId"
         control={control}
         rules={{ required: "This field is required*" }}
         render={({ field }) => (
-          <Select value={field.value} onValueChange={field.onChange} items={projects.map((project)=>({
-            value: project.id,
-            label:project.projectTitle
-          }))}>
+          <Select
+            key={`project-${field.value ?? "empty"}`}
+            value={field.value ?? null}
+            onValueChange={field.onChange}
+            disabled={Boolean(taskId) && !canEdit}
+            items={projects.map((project) => ({
+              value: project.id,
+              label: project.projectTitle,
+            }))}
+          >
             <SelectTrigger
               className={`w-full ${errors.projectId ? "border-red-500" : ""}`}
             >
@@ -167,19 +249,27 @@ const TaskPage = () => {
           </Select>
         )}
       />
+      ) : null}
       {errors.projectId && (
         <p className="text-sm text-red-500">{errors.projectId.message}</p>
       )}
       <span>Assigned To</span>
+      {formReady ? (
       <Controller
         name="assignedTo"
         control={control}
         rules={{ required: "This field is required*" }}
         render={({ field }) => (
-          <Select value={field.value} onValueChange={field.onChange} items={users.map((user)=>({
-            value: user.id,
-            label:user.firstName.trim()
-          }))}>
+          <Select
+            key={`assignee-${field.value ?? "empty"}`}
+            value={field.value ?? null}
+            onValueChange={field.onChange}
+            disabled={Boolean(taskId) && !canEdit}
+            items={users.map((user) => ({
+              value: user.id,
+              label: `${user.firstName} ${user.lastName}`.trim(),
+            }))}
+          >
             <SelectTrigger
               className={`w-full ${errors.assignedTo ? "border-red-500" : ""}`}
             >
@@ -197,6 +287,7 @@ const TaskPage = () => {
           </Select>
         )}
       />
+      ) : null}
       {errors.assignedTo && (
         <p className="text-sm text-red-500">{errors.assignedTo.message}</p>
       )}
@@ -204,18 +295,26 @@ const TaskPage = () => {
       <Input
         type="date"
         className={`w-full ${errors.dueDate ? "border-red-500" : ""}`}
+        disabled={Boolean(taskId) && !canEdit}
         {...register("dueDate", { required: "This field is requird" })}
       />
       {errors.dueDate && (
         <p className="text-sm text-red-500">{errors.dueDate.message}</p>
       )}
       <span>Status</span>
+      {formReady ? (
       <Controller
         name="status"
         control={control}
         rules={{ required: "This field is required*" }}
         render={({ field }) => (
-          <Select value={field.value} onValueChange={field.onChange}>
+          <Select
+            key={`status-${field.value ?? "empty"}`}
+            value={field.value ?? null}
+            onValueChange={field.onChange}
+            disabled={Boolean(taskId) && !canEdit}
+            items={statusItems}
+          >
             <SelectTrigger
               className={`w-full ${errors.status ? "border-red-500" : ""}`}
             >
@@ -233,16 +332,27 @@ const TaskPage = () => {
           </Select>
         )}
       />
+      ) : null}
       {errors.status && (
         <p className="text-sm text-red-500">{errors.status.message}</p>
       )}
       <div className="flex gap-2 justify-center items-center p-2">
-        <Button type="submit" className="p-4 text-xl">
-          Add Task
+        <Button
+          type="submit"
+          className="p-4 text-xl"
+          disabled={Boolean(taskId) && !canEdit}
+        >
+          {taskId ? "Update Task" : "Add Task"}
         </Button>
       </div>
     </form>
   );
-};
+}
 
-export default TaskPage;
+export default function TaskPageRoute() {
+  return (
+    <Suspense fallback={<p className="p-4">Loading task form...</p>}>
+      <TaskPage />
+    </Suspense>
+  );
+}

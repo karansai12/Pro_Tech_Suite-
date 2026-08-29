@@ -135,3 +135,128 @@ export async function PATCH(request: Request) {
 
   return NextResponse.json({ success: true, status: updated.status });
 }
+
+export async function GET(request: Request) {
+  const payload = await getAuthUser();
+
+  if (!payload?.userId) {
+    return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
+  }
+
+  const taskId = new URL(request.url).searchParams.get("id");
+
+  if (!taskId) {
+    return NextResponse.json({ error: "Task id is required" }, { status: 400 });
+  }
+
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: {
+      id: true,
+      taskName: true,
+      taskDescription: true,
+      projectId: true,
+      assignedTo: true,
+      dueDate: true,
+      status: true,
+      project: {
+        select: {
+          id: true,
+          projectTitle: true,
+        },
+      },
+      assignee: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
+  });
+
+  if (!task) {
+    return NextResponse.json({ error: "Task not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ task });
+}
+
+export async function PUT(request: Request) {
+  const payload = await getAuthUser();
+
+  if (!payload?.userId) {
+    return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const {
+    taskId,
+    taskName,
+    taskDescription,
+    projectId,
+    assignedTo,
+    dueDate,
+    status,
+  } = body;
+
+  if (
+    !taskId ||
+    !taskName ||
+    !taskDescription ||
+    !projectId ||
+    !assignedTo ||
+    !dueDate
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Task id, name, description, project, assignee, and due date are required",
+      },
+      { status: 400 },
+    );
+  }
+
+  if (!TASK_STATUSES.includes(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+
+  const [user, task] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { role: true },
+    }),
+    prisma.task.findUnique({
+      where: { id: taskId },
+      select: { assignedTo: true },
+    }),
+  ]);
+
+  if (!task) {
+    return NextResponse.json({ error: "Task not found" }, { status: 404 });
+  }
+
+  const isManager = user?.role === "MANAGER";
+  const isAssignee = task.assignedTo === payload.userId;
+
+  if (!isManager && !isAssignee) {
+    return NextResponse.json(
+      { error: "Only the assignee or a manager can edit this task" },
+      { status: 403 },
+    );
+  }
+
+  await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      taskName,
+      taskDescription,
+      dueDate: new Date(dueDate),
+      status,
+      project: { connect: { id: projectId } },
+      assignee: { connect: { id: assignedTo } },
+    },
+  });
+
+  return NextResponse.json({ success: true });
+}

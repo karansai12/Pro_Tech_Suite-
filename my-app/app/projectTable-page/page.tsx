@@ -107,28 +107,27 @@ function ProjectTable() {
       },
     ];
 
-    columns.push({
-      headerName: "Actions",
-      sortable: false,
-      filter: false,
-      minWidth: role === "MANAGER" ? 180 : 110,
-      cellRenderer: (params: { data?: ProjectRow }) => {
-        if (!params.data) return null;
-        return (
-          <div className="flex flex-row justify-center items-center gap-2">
-            <Button>Edit</Button>
-            {role === "MANAGER" ? (
+    if (role === "MANAGER") {
+      columns.push({
+        headerName: "Actions",
+        sortable: false,
+        filter: false,
+        minWidth: 110,
+        cellRenderer: (params: { data?: ProjectRow }) => {
+          if (!params.data) return null;
+          return (
+            <div className="flex flex-row justify-center items-center gap-2">
               <Button
                 variant="destructive"
                 onClick={() => handleDelete(params.data!.id)}
               >
                 delete
               </Button>
-            ) : null}
-          </div>
-        );
-      },
-    });
+            </div>
+          );
+        },
+      });
+    }
 
     return columns;
   }, [role]);
