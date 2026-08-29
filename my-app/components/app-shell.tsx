@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import {
   Sidebar,
@@ -14,19 +14,22 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import useStore from "@/lib/store";
+import { Button } from "./ui/button";
 
 const AUTH_ROUTES = [
   "/employee-page",
   "/project-page",
-//   "/profile-page",
+  "/projectTable-page",
   "/task-page",
+  "/taskTable-page",
   "/home-page",
 ];
 const NON_AUTH_ROUTES = ["/login-page", "/signup-page", "/"];
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const setUser = useStore((state)=>state.setUser)
   const { lastName, email, role } = useStore((state) => state.user);
-console.log({role})
+  const router = useRouter();
   const pathname = usePathname();
 
   const isAuthRoute = AUTH_ROUTES.some(
@@ -41,6 +44,17 @@ console.log({role})
     return <>{children}</>;
   }
 
+  const handleLogout = async () => {
+    await fetch("/api/logout", { method: "POST" });
+    setUser({firstName:"" ,
+      lastName:"",
+      email:"",
+      role:null,
+    })
+    router.push("/login-page")
+   
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -52,25 +66,19 @@ console.log({role})
           <SidebarGroup className="flex flex-col gap-3">
             <Link
               href="/employee-page"
-              className="text-blue-400 hover:text-blue-300"
+              
             >
               Employee
             </Link>
             <Link
-              href="/project-page"
-              className="text-blue-400 hover:text-blue-300"
+              href="/projectTable-page"
+              
             >
               Project
             </Link>
-            {/* <Link
-              href="/profile-page"
-              className="text-blue-400 hover:text-blue-300"
-            >
-              Profile
-            </Link> */}
             <Link
-              href="/task-page"
-              className="text-blue-400 hover:text-blue-300"
+              href="/taskTable-page"
+              
             >
               Task
             </Link>
@@ -78,8 +86,13 @@ console.log({role})
         </SidebarContent>
         <SidebarFooter className="flex font-bold">
           <span>{lastName}</span>
-          <span>{role}</span>
+          <span className="flex flex-row justify-between gap-2"> {role} 
+          <Button  onClick={handleLogout} className="bg-red-500 text-white hover:bg-red-600 size-sm">
+            Logout
+            </Button>
+            </span>
         </SidebarFooter>
+        
       </Sidebar>
 
       <SidebarInset className="flex-1">

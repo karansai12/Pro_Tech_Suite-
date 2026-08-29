@@ -1,45 +1,46 @@
-"use client"
+"use client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Controller,useForm } from "react-hook-form";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-type Status = "PENDING" | "ACTIVE" | "REJECTED";
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 
 type Project = {
   title: string;
   description: string;
-  status: Status;
 };
 
-interface StatusItem {
-  label: string;
-  value: string;
-}
-
-const items: StatusItem[] = [
-  { label: "PENDING", value: "PENDING" },
-  { label: "ACTIVE", value: "ACTIVE" },
-  { label: "REJECTED", value: "REJECTED" },
-];
-
 const ProjectPage = () => {
+  const router = useRouter();
   const {
     register,
     handleSubmit,
     formState: { errors },
-    control
   } = useForm<Project>();
 
-  const handleOnSubmitProject = () => {};
+  const handleOnSubmitProject = async (project: Project) => {
+    try {
+      const response = await fetch("/api/project", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectName: project.title,
+          projectDescription: project.description,
+        }),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        console.log("Success", result);
+        router.push("/projectTable-page");
+      } else {
+        console.error("Server said:", result);
+        throw new Error("Failed to submit.");
+      }
+    } catch (error) {
+      console.error("Error", error);
+    }
+  };
 
   return (
     <form
@@ -64,33 +65,6 @@ const ProjectPage = () => {
       />
       {errors.description && (
         <p className="text-sm text-red-500">{errors.description.message}</p>
-      )}
-      <span>Status</span>
-      <Controller
-          name="status"
-          control={control}
-          rules={{ required: "This field is required*" }}
-          render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger
-                className={`w-full ${errors.status ? "border-red-500" : ""}`}
-              >
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {items.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          )}
-        />
-      {errors.status && (
-        <p className="text-sm text-red-500">{errors.status.message}</p>
       )}
       <div className="flex gap-2 justify-center items-center p-2">
         <Button type="submit" className="p-4 text-xl">
