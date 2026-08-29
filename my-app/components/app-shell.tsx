@@ -46,11 +46,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const handleLogout = async () => {
     await fetch("/api/logout", { method: "POST" });
-    setUser({firstName:"" ,
-      lastName:"",
-      email:"",
-      role:null,
-    })
+    setUser({
+      id: "",
+      firstName: "",
+      lastName: "",
+      email: "",
+      role: null,
+    });
     router.push("/login-page")
    
   }

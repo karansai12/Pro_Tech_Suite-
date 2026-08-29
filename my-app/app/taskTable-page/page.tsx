@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { AllCommunityModule } from "ag-grid-community";
+import { AllCommunityModule, type ColDef } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useStore from "@/lib/store";
 
 const modules = [AllCommunityModule];
@@ -17,18 +17,72 @@ type TaskRow = {
   taskDescription: string;
   dueDate: string;
   status: TaskStatus;
+  assignedTo: string;
   projectId: string;
   assignee: {
+    id: string;
     firstName: string;
   };
 };
 
+const STATUS_OPTIONS: { label: string; value: TaskStatus }[] = [
+  { label: "OPEN", value: "OPEN" },
+  { label: "IN PROGRESS", value: "INPROGRESS" },
+  { label: "COMPLETED", value: "COMPLETED" },
+];
+
 function TaskTable() {
-const {role} = useStore((state)=>state.user)
+  const { role, id: userId } = useStore((state) => state.user);
   const router = useRouter();
   const [rowData, setRowData] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const canChangeStatus = useCallback(
+    (task: TaskRow) => role === "MANAGER" || task.assignedTo === userId,
+    [role, userId],
+  );
+
+  const handleStatusChange = useCallback(
+    async (taskId: string, status: TaskStatus) => {
+      try {
+        const response = await fetch("/api/task", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskId, status }),
+        });
+        if (!response.ok) {
+          throw new Error("Failed to update status");
+        }
+        setRowData((rows) =>
+          rows.map((row) => (row.id === taskId ? { ...row, status } : row)),
+        );
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to update status",
+        );
+        console.error(err);
+      }
+    },
+    [],
+  );
+
+  const handleDelete = async (taskId: string) => {
+    try {
+      const response = await fetch("/api/task", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to delete task");
+      }
+      setRowData((rows) => rows.filter((row) => row.id !== taskId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete task");
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -49,32 +103,32 @@ const {role} = useStore((state)=>state.user)
     fetchTasks();
   }, []);
 
-  const colDefs = useMemo(
-    () => [
+  const colDefs = useMemo<ColDef<TaskRow>[]>(() => {
+    const columns: ColDef<TaskRow>[] = [
       {
-        field: "taskName" as const,
+        field: "taskName",
         headerName: "Task Title",
         sortable: true,
         filter: true,
       },
       {
-        field: "taskDescription" as const,
+        field: "taskDescription",
         headerName: "Task Description",
         sortable: true,
         filter: true,
       },
       {
-        field: "assignee.firstName" as const,
+        field: "assignee.firstName",
         headerName: "Assigned To",
         sortable: true,
         filter: true,
       },
       {
-        field: "dueDate" as const,
+        field: "dueDate",
         headerName: "Due Date",
         sortable: true,
         filter: true,
-        valueFormatter: (params: { value: string }) => {
+        valueFormatter: (params) => {
           const v = params.value;
           if (!v) return "";
           const d = new Date(v);
@@ -85,16 +139,71 @@ const {role} = useStore((state)=>state.user)
           });
         },
       },
-      { field: "status" as const, headerName: "Status", sortable: true, filter: true },
       {
-        field: "projectId" as const,
+        field: "status",
+        headerName: "Status",
+        sortable: true,
+        filter: true,
+        minWidth: 160,
+        cellRenderer: (params: { data?: TaskRow }) => {
+          if (!params.data) return null;
+          if (!canChangeStatus(params.data)) {
+            return params.data.status;
+          }
+          return (
+            <select
+              className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+              value={params.data.status}
+              onClick={(event) => event.stopPropagation()}
+              onChange={(event) =>
+                handleStatusChange(
+                  params.data!.id,
+                  event.target.value as TaskStatus,
+                )
+              }
+            >
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          );
+        },
+      },
+      {
+        field: "projectId",
         headerName: "Project ID",
         sortable: true,
         filter: true,
       },
-    ],
-    [],
-  );
+    ];
+
+    if (role !== "EMPLOYEE") {
+      columns.push({
+        headerName: "Actions",
+        sortable: false,
+        filter: false,
+        minWidth: 180,
+        cellRenderer: (params: { data?: TaskRow }) => {
+          if (!params.data) return null;
+          return (
+            <div className="flex flex-row justify-center items-center gap-2">
+              <Button>Edit</Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDelete(params.data!.id)}
+              >
+                delete
+              </Button>
+            </div>
+          );
+        },
+      });
+    }
+
+    return columns;
+  }, [canChangeStatus, handleStatusChange, role]);
 
   return (
     <div className="p-4">

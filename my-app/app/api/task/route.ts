@@ -44,3 +44,94 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ success: true }, { status: 201 });
 }
+
+export async function DELETE(request: Request) {
+  const payload = await getAuthUser();
+
+  if (!payload?.userId) {
+    return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { role: true },
+  });
+
+  if (user?.role !== "MANAGER") {
+    return NextResponse.json(
+      { error: "Only managers can delete a task" },
+      { status: 403 },
+    );
+  }
+
+  const body = await request.json();
+  const { taskId } = body;
+
+  if (!taskId) {
+    return NextResponse.json({ error: "Task id is required" }, { status: 400 });
+  }
+
+  try {
+    await prisma.task.delete({
+      where: { id: taskId },
+    });
+  } catch {
+    return NextResponse.json({ error: "Task not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true }, { status: 200 });
+}
+
+export async function PATCH(request: Request) {
+  const payload = await getAuthUser();
+
+  if (!payload?.userId) {
+    return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const { taskId, status } = body;
+
+  if (!taskId || !status) {
+    return NextResponse.json(
+      { error: "Task id and status are required" },
+      { status: 400 },
+    );
+  }
+
+  if (!TASK_STATUSES.includes(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+
+  const [user, task] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { role: true },
+    }),
+    prisma.task.findUnique({
+      where: { id: taskId },
+      select: { assignedTo: true },
+    }),
+  ]);
+
+  if (!task) {
+    return NextResponse.json({ error: "Task not found" }, { status: 404 });
+  }
+
+  const isManager = user?.role === "MANAGER";
+  const isAssignee = task.assignedTo === payload.userId;
+
+  if (!isManager && !isAssignee) {
+    return NextResponse.json(
+      { error: "Only the assignee or a manager can change status" },
+      { status: 403 },
+    );
+  }
+
+  const updated = await prisma.task.update({
+    where: { id: taskId },
+    data: { status },
+  });
+
+  return NextResponse.json({ success: true, status: updated.status });
+}

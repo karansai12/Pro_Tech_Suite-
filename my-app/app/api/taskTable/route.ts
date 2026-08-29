@@ -10,9 +10,11 @@ export async function GET() {
         taskDescription: true,
         dueDate: true,
         status: true,
+        assignedTo: true,
         projectId: true,
         assignee: {
           select: {
+            id: true,
             firstName: true,
           },
         },

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import useStore from "@/lib/store";
-import { AllCommunityModule } from "ag-grid-community";
+import { AllCommunityModule, type ColDef } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -29,6 +29,25 @@ function ProjectTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const handleDelete =async(projectId:string)=>{
+    try{
+      const response = await fetch('/api/project',{
+        method:'DELETE',
+        headers: { "Content-Type": "application/json" },
+        body:JSON.stringify({projectId})
+      })
+      if(!response.ok){
+        throw new Error("Failed to delete project");
+      }
+      setRowData((rows) => rows.filter((row) => row.id !== projectId));
+    }catch(err){
+      setError(
+        err instanceof Error ? err.message : "Failed to delete project",
+      );
+      console.error(err);
+    }
+  }
+
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -50,33 +69,32 @@ function ProjectTable() {
     fetchProjects();
   }, []);
 
-  const colDefs = useMemo(
-    () => [
+  const colDefs = useMemo<ColDef<ProjectRow>[]>(() => {
+    const columns: ColDef<ProjectRow>[] = [
       {
-        field: "projectTitle" as const,
+        field: "projectTitle",
         headerName: "Project Name",
         sortable: true,
         filter: true,
       },
       {
-        field: "projectDescription" as const,
+        field: "projectDescription",
         headerName: "Project Description",
         sortable: true,
         filter: true,
       },
-      { field: "status" as const, sortable: true, filter: true },
       {
-        field: "user.firstName" as const,
+        field: "user.firstName",
         headerName: "Assigned By",
         sortable: true,
         filter: true,
       },
       {
-        field: "createdAt" as const,
+        field: "createdAt",
         headerName: "Created At",
         sortable: true,
         filter: true,
-        valueFormatter: (params: { value: string }) => {
+        valueFormatter: (params) => {
           const v = params.value;
           if (!v) return "";
           const d = new Date(v);
@@ -85,11 +103,35 @@ function ProjectTable() {
             month: "short",
             year: "numeric",
           });
-        }
+        },
       },
-    ],
-    [],
-  );
+    ];
+
+    columns.push({
+      headerName: "Actions",
+      sortable: false,
+      filter: false,
+      minWidth: role === "MANAGER" ? 180 : 110,
+      cellRenderer: (params: { data?: ProjectRow }) => {
+        if (!params.data) return null;
+        return (
+          <div className="flex flex-row justify-center items-center gap-2">
+            <Button>Edit</Button>
+            {role === "MANAGER" ? (
+              <Button
+                variant="destructive"
+                onClick={() => handleDelete(params.data!.id)}
+              >
+                delete
+              </Button>
+            ) : null}
+          </div>
+        );
+      },
+    });
+
+    return columns;
+  }, [role]);
   console.log({ rowData });
 
   return (

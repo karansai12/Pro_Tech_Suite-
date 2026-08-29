@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 type Role = "MANAGER" | "EMPLOYEE";
 
 type User = {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -19,6 +20,7 @@ const useStore = create<Store>()(
   persist<Store>(
     (set) => ({
       user: {
+        id: "",
         firstName: "",
         lastName: "",
         email: "",
