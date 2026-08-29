@@ -2,7 +2,9 @@
 
 import { AllCommunityModule } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import useStore from "@/lib/store";
 
 const modules = [AllCommunityModule];
 
@@ -15,11 +17,22 @@ type UserRow = {
 };
 
 const EmployeePage = () => {
+  const router = useRouter();
+  const { role } = useStore((state) => state.user);
   const [rowData, setRowData] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (role === "EMPLOYEE") {
+      router.replace("/taskTable-page");
+      return;
+    }
+
+    if (role !== "MANAGER") {
+      return;
+    }
+
     const fetchUsers = async () => {
       try {
         const response = await fetch("/api/users");
@@ -38,7 +51,7 @@ const EmployeePage = () => {
     };
 
     fetchUsers();
-  }, []);
+  }, [role, router]);
 
   const colDefs = useMemo(
     () => [
@@ -49,6 +62,10 @@ const EmployeePage = () => {
     ],
     []
   );
+
+  if (role === "EMPLOYEE") {
+    return null;
+  }
 
   return (
     <div className="p-4">

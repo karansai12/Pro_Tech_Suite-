@@ -66,12 +66,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup className="flex flex-col gap-3">
-            <Link
-              href="/employee-page"
-              
-            >
-              Employee
-            </Link>
+            {role === "MANAGER" ? (
+              <Link href="/employee-page">Employee</Link>
+            ) : null}
             <Link
               href="/projectTable-page"
               

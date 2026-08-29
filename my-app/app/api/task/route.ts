@@ -11,6 +11,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
   }
 
+  const creator = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { role: true },
+  });
+
+  if (creator?.role !== "MANAGER") {
+    return NextResponse.json(
+      { error: "Only managers can create a task" },
+      { status: 403 },
+    );
+  }
+
   const body = await request.json();
   const { taskName, taskDescription, projectId, assignedTo, dueDate, status } =
     body;

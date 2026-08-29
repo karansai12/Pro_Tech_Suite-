@@ -76,6 +76,11 @@ function TaskPage() {
   });
 
   useEffect(() => {
+    if (role === "EMPLOYEE") {
+      router.replace("/taskTable-page");
+      return;
+    }
+
     const loadForm = async () => {
       try {
         const [projectsRes, usersRes] = await Promise.all([
@@ -151,7 +156,7 @@ function TaskPage() {
     };
 
     loadForm();
-  }, [reset, role, taskId, userId]);
+  }, [reset, role, router, taskId, userId]);
 
   const handleOnSubmitTask = async (task: Task) => {
     if (taskId && !canEdit) return;

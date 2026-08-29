@@ -179,18 +179,16 @@ function TaskTable() {
       },
     ];
 
-    columns.push({
-      headerName: "Actions",
-      sortable: false,
-      filter: false,
-      minWidth: role === "MANAGER" ? 180 : 110,
-      cellRenderer: (params: { data?: TaskRow }) => {
-        if (!params.data) return null;
-        const isManager = role === "MANAGER";
-        const canEdit = isManager || params.data.assignedTo === userId;
-        return (
-          <div className="flex flex-row justify-center items-center gap-2">
-            {canEdit ? (
+    if (role === "MANAGER") {
+      columns.push({
+        headerName: "Actions",
+        sortable: false,
+        filter: false,
+        minWidth: 180,
+        cellRenderer: (params: { data?: TaskRow }) => {
+          if (!params.data) return null;
+          return (
+            <div className="flex flex-row justify-center items-center gap-2">
               <Button
                 onClick={() =>
                   router.push(`/task-page?id=${params.data!.id}`)
@@ -198,22 +196,20 @@ function TaskTable() {
               >
                 Edit
               </Button>
-            ) : null}
-            {isManager ? (
               <Button
                 variant="destructive"
                 onClick={() => handleDelete(params.data!.id)}
               >
                 delete
               </Button>
-            ) : null}
-          </div>
-        );
-      },
-    });
+            </div>
+          );
+        },
+      });
+    }
 
     return columns;
-  }, [canChangeStatus, handleStatusChange, role, router, userId]);
+  }, [canChangeStatus, handleStatusChange, role, router]);
 
   return (
     <div className="p-4">
@@ -224,7 +220,11 @@ function TaskTable() {
       {loading && <p>Loading tasks...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
-      {!loading && !error && (
+      {!loading && !error && rowData.length === 0 && role === "EMPLOYEE" ? (
+        <h2 className="text-muted-foreground text-2xl">No task assigned to you</h2>
+      ) : null}
+
+      {!loading && !error && (rowData.length > 0 || role !== "EMPLOYEE") && (
         <div style={{ height: 500 }} className="rounded-md border">
           <AgGridReact
             modules={modules}
