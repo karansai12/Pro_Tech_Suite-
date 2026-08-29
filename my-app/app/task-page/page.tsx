@@ -191,7 +191,7 @@ function TaskPage() {
   return (
     <form
       onSubmit={handleSubmit(handleOnSubmitTask)}
-      className="flex flex-col justify-center border border-black rounded-md w-2xl gap-2 p-4 m-auto"
+      className="flex flex-col justify-center border border-border rounded-md w-2xl gap-2 p-4 m-auto bg-card text-foreground"
     >
       <h2 className="flex items-center justify-center">
         {taskId ? "Edit Task" : "Task"}

@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import useStore from "@/lib/store";
+import { AG_HEADER_HEIGHT, AG_ROW_HEIGHT, agTableHeight } from "@/lib/ag-table";
 import { AllCommunityModule, type ColDef } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { useRouter } from "next/navigation";
@@ -143,11 +144,17 @@ function ProjectTable() {
       {error && <p className="text-red-500">{error}</p>}
 
       {!loading && !error && (
-        <div style={{ height: 500 }} className="rounded-md border">
+        <div
+          className="w-full overflow-hidden rounded-md border border-border bg-background text-foreground"
+          style={{ height: agTableHeight(rowData.length) }}
+        >
           <AgGridReact
             modules={modules}
             rowData={rowData}
             columnDefs={colDefs}
+            headerHeight={AG_HEADER_HEIGHT}
+            rowHeight={AG_ROW_HEIGHT}
+            containerStyle={{ height: "100%", width: "100%" }}
             defaultColDef={{
               flex: 1,
               minWidth: 140,

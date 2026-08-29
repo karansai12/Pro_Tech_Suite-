@@ -22,21 +22,20 @@ const LoginPage = () => {
     try {
       const response = await fetch("/api/login", {
         method: "POST",
-        headers:{"Content-type":"application/hson"},
+        headers: { "Content-type": "application/json" },
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
         }),
       });
-      
+
+      const result = await response.json();
       if (response.ok) {
-        router.push("/home-page");
+        setUser(result.user);
+        router.push("/taskTable-page");
       } else {
         throw new Error("Failed to submit form");
       }
-      const result = await response.json();
-      setUser(result.user)
-      console.log("Success", result);
     } catch (error) {
       console.error("Error", error);
     }
@@ -45,7 +44,7 @@ const LoginPage = () => {
   return (
     <form
       onSubmit={handleSubmit(handleOnSubmit)}
-      className="flex flex-col justify-center border border-black rounded-md w-2xl gap-2 p-4 m-auto"
+      className="flex flex-col justify-center border border-border rounded-md w-2xl gap-2 p-4 m-auto bg-card text-foreground"
     >
       <h2 className="flex items-center justify-center">Log In</h2>
       <span>Email</span>

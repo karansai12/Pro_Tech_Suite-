@@ -22,7 +22,6 @@ const AUTH_ROUTES = [
   "/projectTable-page",
   "/task-page",
   "/taskTable-page",
-  "/home-page",
 ];
 const NON_AUTH_ROUTES = ["/login-page", "/signup-page", "/"];
 
@@ -53,7 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       email: "",
       role: null,
     });
-    router.push("/login-page")
+    router.push("/");
    
   }
 
@@ -86,7 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SidebarFooter className="flex font-bold">
           <span>{lastName}</span>
           <span className="flex flex-row justify-between gap-2"> {role} 
-          <Button  onClick={handleLogout} className="bg-red-500 text-white hover:bg-red-600 size-sm">
+          <Button onClick={handleLogout} variant="destructive" size="sm">
             Logout
             </Button>
             </span>
