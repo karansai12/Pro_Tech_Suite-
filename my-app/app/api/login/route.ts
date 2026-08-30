@@ -3,16 +3,17 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET must be set in environment variables.");
-}
-
 export async function POST(request: Request) {
+  const JWT_SECRET = process.env.JWT_SECRET;
+  if (!JWT_SECRET) {
+    return NextResponse.json(
+      { error: "JWT_SECRET must be set in environment variables." },
+      { status: 500 },
+    );
+  }
+
   const body = await request.json();
   const { email, password } = body;
-   console.log({email, password})
   if (!email || !password) {
     return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
   }
