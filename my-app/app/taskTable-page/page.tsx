@@ -146,31 +146,6 @@ function TaskTable() {
         sortable: true,
         filter: true,
         minWidth: 160,
-        cellRenderer: (params: { data?: TaskRow }) => {
-          if (!params.data) return null;
-          if (!canChangeStatus(params.data)) {
-            return params.data.status;
-          }
-          return (
-            <select
-              className="h-8 w-full rounded-md border bg-background px-2 text-sm"
-              value={params.data.status}
-              onClick={(event) => event.stopPropagation()}
-              onChange={(event) =>
-                handleStatusChange(
-                  params.data!.id,
-                  event.target.value as TaskStatus,
-                )
-              }
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          );
-        },
       },
       {
         field: "projectId",
@@ -201,7 +176,7 @@ function TaskTable() {
                 variant="destructive"
                 onClick={() => handleDelete(params.data!.id)}
               >
-                delete
+                Delete
               </Button>
             </div>
           );

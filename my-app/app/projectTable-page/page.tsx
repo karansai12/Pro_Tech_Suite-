@@ -122,7 +122,7 @@ function ProjectTable() {
                 variant="destructive"
                 onClick={() => handleDelete(params.data!.id)}
               >
-                delete
+                Delete
               </Button>
             </div>
           );
