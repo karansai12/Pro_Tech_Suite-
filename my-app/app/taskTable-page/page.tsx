@@ -166,6 +166,8 @@ function TaskTable() {
           return (
             <div className="flex flex-row justify-center items-center gap-2">
               <Button
+                variant="ghost"
+                className="bg-transparent"
                 onClick={() =>
                   router.push(`/task-page?id=${params.data!.id}`)
                 }

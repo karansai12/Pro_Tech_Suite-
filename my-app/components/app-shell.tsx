@@ -60,8 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <span className="text-2xl">Navigations</span>
-          <h1 className="text-xl">{email}</h1>
+          <span className="text-2xl">Dashboard</span>
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup className="flex flex-col gap-3">
@@ -84,6 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SidebarContent>
         <SidebarFooter className="flex font-bold">
           <span>{lastName}</span>
+          <h1 className="text-xl">{email}</h1>
           <span className="flex flex-row justify-between gap-2"> {role} 
           <Button onClick={handleLogout} variant="destructive" size="sm">
             Logout
